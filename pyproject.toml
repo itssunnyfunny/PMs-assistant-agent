@@ -1,0 +1,14 @@
+[project]
+name = "portia-pm-agent"
+version = "0.1.0"
+description = "AI agent for project managers to generate task breakdowns"
+requires-python = ">=3.10"
+
+dependencies = [
+    "portia-ai",   # Portia AI agent framework
+    "python-dotenv", # for env variables
+]
+
+[tool.uv]
+# optional, allows uv to know your entrypoint
+scripts = { start = "python main.py" }
