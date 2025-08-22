@@ -6,7 +6,7 @@ __pycache__/
 # Virtual environment (uv manages .venv)
 .venv/
 .env
-.env.*
+
 
 # uv build artifacts
 .uv/
