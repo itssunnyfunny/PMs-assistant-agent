@@ -1,12 +1,13 @@
 [project]
 name = "portia-pm-agent"
 version = "0.1.0"
-description = "AI agent for project managers to generate task breakdowns"
+description = "AI agent for project managers to plan projects and assign tasks to employees"
 requires-python = ">=3.10"
 
 dependencies = [
     "portia-sdk-python",   # Portia Python SDK (used by the scripts)
     "python-dotenv",       # load .env env vars
+    "PyYAML",              # YAML support for configuration and data export
 ]
 
 [tool.uv]
