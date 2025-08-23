@@ -81,3 +81,16 @@ def apply_edits_to_steps(original_steps: List[Dict[str, Any]], edits: List[Dict[
         else:
             print(f"unknown action '{a}' -> skipping")
     return steps
+
+    
+def rebuild_plan_from_steps(objective: str, project_idea: str, steps: List[Dict[str, Any]]) -> Dict[str, Any]:
+    builder = PlanBuilderV2(objective)
+    # keep the original idea as an input for traceability
+    builder.input(name="project_idea", description="Original project idea", default_value=project_idea)
+    for s in steps:
+        task_text = s.get("task") or "Perform the described task"
+        # For simplicity we add as an LLM step
+        builder.llm_step(task=task_text)
+    new_plan = builder.build()
+    return json.loads(new_plan.model_dump_json())
+
