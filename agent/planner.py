@@ -1,24 +1,12 @@
-import os
-from portia import Portia
+import json
+import argparse
+import sys
+from typing import List, Dict, Any, Optional
 
-# Initialize Portia client
-portia = Portia(api_key=os.getenv("PORTIA_API_KEY"))
-
-def generate_project_plan(project_idea: str):
-    """
-    Generate structured project plan from a user idea.
-    """
-    prompt = f"""
-    You are an assistant for project managers.
-    Break down the following project idea into 4–6 clear tasks.
-
-    Rules:
-    - Output only in JSON.
-    - Each task must have: title, description, suggested_role.
-
-    Project idea: {project_idea}
-    """
-
-    response = portia.generate(prompt, format="json")
-
-    return response
+# Portia imports
+try:
+    from portia import Portia, example_tool_registry
+    from portia.plan import PlanBuilderV2
+except Exception as e:
+    print("ERROR: Could not import portia. Install with: pip install portia-sdk-python")
+    raise e
