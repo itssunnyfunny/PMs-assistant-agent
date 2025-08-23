@@ -119,29 +119,156 @@ def interactive_edit_loop(original_plan: Dict[str, Any], portia_client: Portia, 
             break
         if cmd == "help":
             print("""Commands:
-  show
-    - print current steps (after applying queued edits)
-  edit <index> <new text>
-    - replace step text at index
-  add [index] <text>
-    - insert new step at index (or append if index omitted)
-  remove <index>
-    - delete step at index
-  move <from_index> <to_index>
-    - move step
-  queue
-    - show queued edits (not applied yet)
-  apply
-    - apply queued edits immediately and show resulting steps
-  rebuild
-    - build a new Plan from the current (applied) steps and print JSON
-  save <filename.json>
-    - save the rebuilt plan JSON to file (runs a rebuild automatically)
-  export
-    - print rebuilt plan JSON to stdout
-  help
-    - show this help
-  done
-    - finish and exit
-""")
+            show
+                - print current steps (after applying queued edits)
+            edit <index> <new text>
+                - replace step text at index
+            add [index] <text>
+                - insert new step at index (or append if index omitted)
+            remove <index>
+                - delete step at index
+            move <from_index> <to_index>
+                - move step
+            queue
+                - show queued edits (not applied yet)
+            apply
+                - apply queued edits immediately and show resulting steps
+            rebuild
+                - build a new Plan from the current (applied) steps and print JSON
+            save <filename.json>
+                - save the rebuilt plan JSON to file (runs a rebuild automatically)
+            export
+                - print rebuilt plan JSON to stdout
+            help
+                - show this help
+            done
+                - finish and exit
+            """)
             continue
+
+        if cmd == "show":
+            # preview: show steps after applying queued edits
+            preview = apply_edits_to_steps(steps, edits)
+            print_steps(preview)
+            continue
+
+        if cmd == "queue":
+            print("Queued edits:")
+            if not edits:
+                print("  [none]")
+            else:
+                for i, e in enumerate(edits):
+                    print(f"  {i}: {e}")
+            continue
+
+        if cmd == "apply":
+            steps = apply_edits_to_steps(steps, edits)
+            edits = []
+            print("Applied queued edits. Current steps:")
+            print_steps(steps)
+            continue
+
+        if cmd == "edit":
+            if len(parts) < 3:
+                print("usage: edit <index> <new text>")
+                continue
+            try:
+                idx = int(parts[1])
+            except ValueError:
+                print("index must be an integer")
+                continue
+            new_text = " ".join(parts[2:])
+            edits.append({"action": "edit", "index": idx, "task": new_text})
+            print(f"queued edit @ {idx}")
+            continue
+
+        if cmd == "add":
+            # add [index] <text>
+            if len(parts) < 2:
+                print("usage: add [index] <text>")
+                continue
+            # detect if second token is an integer index
+            try:
+                maybe_idx = int(parts[1])
+                text = " ".join(parts[2:]) if len(parts) >= 3 else "New step"
+                edits.append({"action": "add", "index": maybe_idx, "task": text})
+            except ValueError:
+                text = " ".join(parts[1:])
+                edits.append({"action": "add", "task": text})
+            print("queued add")
+            continue
+
+        if cmd == "remove":
+            if len(parts) != 2:
+                print("usage: remove <index>")
+                continue
+            try:
+                idx = int(parts[1])
+            except ValueError:
+                print("index must be an integer")
+                continue
+            edits.append({"action": "remove", "index": idx})
+            print(f"queued remove @ {idx}")
+            continue
+
+        if cmd == "move":
+            if len(parts) != 3:
+                print("usage: move <from_index> <to_index>")
+                continue
+            try:
+                a = int(parts[1]); b = int(parts[2])
+            except ValueError:
+                print("indices must be integers")
+                continue
+            edits.append({"action": "move", "index": a, "to_index": b})
+            print(f"queued move {a} -> {b}")
+            continue
+
+        if cmd == "rebuild" or cmd == "export":
+            # apply queued edits then rebuild
+            applied_steps = apply_edits_to_steps(steps, edits)
+            new_plan = rebuild_plan_from_steps(objective, idea_text, applied_steps)
+            pretty = json.dumps(new_plan, indent=2)
+            print("\n=== Rebuilt Plan JSON ===\n")
+            print(pretty)
+            print("\n=== End plan ===\n")
+            continue
+
+        if cmd == "save":
+            if len(parts) != 2:
+                print("usage: save <filename.json>")
+                continue
+            fname = parts[1]
+            applied_steps = apply_edits_to_steps(steps, edits)
+            new_plan = rebuild_plan_from_steps(objective, idea_text, applied_steps)
+            with open(fname, "w", encoding="utf-8") as f:
+                json.dump(new_plan, f, indent=2)
+            print(f"saved rebuilt plan to {fname}")
+            continue
+
+        print("unknown command; type 'help' for available commands.")
+
+    # final: if user left queued edits, apply them and show plan summary
+    if edits:
+        print("Applying queued edits before exit...")
+        steps = apply_edits_to_steps(steps, edits)
+        edits = []
+
+    rebuilt = rebuild_plan_from_steps(objective, idea_text, steps)
+    print("\nFinal rebuilt plan summary (first lines):")
+    print(json.dumps({
+        "id": rebuilt.get("id"),
+        "objective": objective,
+        "num_steps": len(rebuilt.get("steps", []))
+    }, indent=2))
+    # offer to save automatically
+    try:
+        want = input("\nSave rebuilt plan to file? (y/N) ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        want = "n"
+    if want == "y":
+        fname = input("filename (e.g. plan.json): ").strip() or "plan.json"
+        with open(fname, "w", encoding="utf-8") as f:
+            json.dump(rebuilt, f, indent=2)
+        print(f"Saved to {fname}.")
+    print("Done.")
