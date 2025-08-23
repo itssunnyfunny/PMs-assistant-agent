@@ -94,3 +94,54 @@ def rebuild_plan_from_steps(objective: str, project_idea: str, steps: List[Dict[
     new_plan = builder.build()
     return json.loads(new_plan.model_dump_json())
 
+def interactive_edit_loop(original_plan: Dict[str, Any], portia_client: Portia, idea_text: str):
+    steps = original_plan.get("steps", [])
+    objective = original_plan.get("plan_context", {}).get("query") or original_plan.get("id") or f"Plan for: {idea_text}"
+
+    print("\n=== Generated plan steps ===")
+    print_steps(steps)
+    print("\nEnter commands to modify the plan. Type 'help' for commands, 'done' to finish.\n")
+
+    edits: List[Dict[str, Any]] = []
+
+    while True:
+        try:
+            raw = input("> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nexiting interactive mode.")
+            break
+        if not raw:
+            continue
+        parts = raw.split()
+        cmd = parts[0].lower()
+
+        if cmd in ("exit", "quit", "done"):
+            break
+        if cmd == "help":
+            print("""Commands:
+  show
+    - print current steps (after applying queued edits)
+  edit <index> <new text>
+    - replace step text at index
+  add [index] <text>
+    - insert new step at index (or append if index omitted)
+  remove <index>
+    - delete step at index
+  move <from_index> <to_index>
+    - move step
+  queue
+    - show queued edits (not applied yet)
+  apply
+    - apply queued edits immediately and show resulting steps
+  rebuild
+    - build a new Plan from the current (applied) steps and print JSON
+  save <filename.json>
+    - save the rebuilt plan JSON to file (runs a rebuild automatically)
+  export
+    - print rebuilt plan JSON to stdout
+  help
+    - show this help
+  done
+    - finish and exit
+""")
+            continue
