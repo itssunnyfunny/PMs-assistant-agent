@@ -5,8 +5,8 @@ description = "AI agent for project managers to generate task breakdowns"
 requires-python = ">=3.10"
 
 dependencies = [
-    "portia-ai",   # Portia AI agent framework
-    "python-dotenv", # for env variables
+    "portia-sdk-python",   # Portia Python SDK (used by the scripts)
+    "python-dotenv",       # load .env env vars
 ]
 
 [tool.uv]
