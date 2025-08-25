@@ -17,9 +17,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "agent"))
 
 try:
-    from workflow_controller import WorkflowController
-    from pm_planning_agent import PMPlanningAgent
-    from task_assigner import TaskAssignerAgent
+    from agent.workflow_controller import WorkflowController
+    from agent.pm_planning_agent import PMPlanningAgent
+    from agent.task_assigner import TaskAssignerAgent
 except ImportError as e:
     print(f"ERROR: Failed to import required modules: {e}")
     print("Make sure all agent files are in the agent/ directory.")
